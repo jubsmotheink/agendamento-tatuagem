@@ -1,0 +1,99 @@
+'use client'
+
+import { useState } from 'react'
+
+/** Aplica máscara de WhatsApp brasileiro: (11) 98765-4321 */
+function maskWhatsApp(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 11)
+  if (digits.length <= 2) return digits.replace(/(\d{0,2})/, '($1')
+  if (digits.length <= 6) return digits.replace(/(\d{2})(\d{0,4})/, '($1) $2')
+  if (digits.length <= 10)
+    return digits.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3')
+  return digits.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3')
+}
+
+/** Considera válido a partir de 10 dígitos (fixo/celular). */
+function isValidWhatsApp(value: string): boolean {
+  return value.replace(/\D/g, '').length >= 10
+}
+
+type ContactFormProps = {
+  name: string
+  whatsapp: string
+  onSubmit: (data: { name: string; whatsapp: string }) => void
+}
+
+export function ContactForm({ name, whatsapp, onSubmit }: ContactFormProps) {
+  const [nameValue, setNameValue] = useState(name)
+  const [whatsappValue, setWhatsappValue] = useState(whatsapp)
+  const [touched, setTouched] = useState(false)
+
+  const nameOk = nameValue.trim().length >= 2
+  const whatsappOk = isValidWhatsApp(whatsappValue)
+  const valid = nameOk && whatsappOk
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setTouched(true)
+    if (!valid) return
+    onSubmit({ name: nameValue.trim(), whatsapp: whatsappValue })
+  }
+
+  const fieldClass =
+    'w-full rounded-lg border border-border bg-card px-4 py-3 text-foreground placeholder:text-muted-foreground/60 transition-colors focus:border-accent focus:outline-none focus:ring-2 focus:ring-ring/40'
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
+      <div className="flex flex-col gap-2">
+        <label htmlFor="name" className="text-sm font-medium text-foreground">
+          Nome
+        </label>
+        <input
+          id="name"
+          type="text"
+          autoComplete="name"
+          value={nameValue}
+          onChange={(e) => setNameValue(e.target.value)}
+          placeholder="Como posso te chamar"
+          className={fieldClass}
+        />
+        {touched && !nameOk && (
+          <span className="text-xs text-destructive">
+            Informe seu nome para continuar.
+          </span>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <label htmlFor="whatsapp" className="text-sm font-medium text-foreground">
+          WhatsApp
+        </label>
+        <input
+          id="whatsapp"
+          type="tel"
+          inputMode="numeric"
+          autoComplete="tel-national"
+          value={whatsappValue}
+          onChange={(e) => setWhatsappValue(maskWhatsApp(e.target.value))}
+          placeholder="(11) 98765-4321"
+          className={fieldClass}
+        />
+        {touched && !whatsappOk && (
+          <span className="text-xs text-destructive">
+            Informe um WhatsApp válido com DDD.
+          </span>
+        )}
+        <span className="text-xs text-muted-foreground">
+          Uso apenas para falar com você sobre a sessão.
+        </span>
+      </div>
+
+      <button
+        type="submit"
+        className="mt-2 w-full rounded-lg bg-primary px-5 py-3.5 text-sm font-medium uppercase tracking-widest text-primary-foreground transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      >
+        Revisar reserva
+      </button>
+    </form>
+  )
+}
