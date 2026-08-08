@@ -11,6 +11,7 @@ import { TimeSlots } from './time-slots'
 import { ContactForm } from './contact-form'
 import { Review } from './review'
 import { Reservation } from './reservation'
+import { Expired } from './expired'
 import { Confirmation } from './confirmation'
 import { StepIndicator } from './step-indicator'
 
@@ -65,6 +66,10 @@ export function BookingFlow() {
     setStep('schedule')
   }
 
+  function expireReservation() {
+    setStep('expired')
+  }
+
   const timeLabel = STUDIO_TIME_SLOTS.find((s) => s.value === booking.time)?.label
 
   return (
@@ -78,7 +83,7 @@ export function BookingFlow() {
         </h1>
       </header>
 
-      {step !== 'confirmation' && (
+      {step !== 'confirmation' && step !== 'expired' && (
         <StepIndicator current={step} className="mb-8" />
       )}
 
@@ -143,11 +148,9 @@ export function BookingFlow() {
         )}
 
         {step === 'reservation' && (
-  <Reservation
-    booking={booking}
-    onExpired={restart}
-  />
-)}
+          <Reservation booking={booking} onExpired={expireReservation} />
+        )}
+        {step === 'expired' && <Expired onRestart={restart} />}
         {step === 'confirmation' && (
           <Confirmation booking={booking} onRestart={restart} />
         )}

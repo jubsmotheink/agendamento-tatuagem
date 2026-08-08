@@ -4,6 +4,7 @@ export type BookingStep =
   | 'contact'
   | 'review'
   | 'reservation'
+  | 'expired'
   | 'confirmation'
 
 /** Estado acumulado ao longo do fluxo. */
