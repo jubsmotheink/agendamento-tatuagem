@@ -20,23 +20,30 @@ function isValidWhatsApp(value: string): boolean {
 type ContactFormProps = {
   name: string
   whatsapp: string
-  onSubmit: (data: { name: string; whatsapp: string }) => void
+  email: string
+  onSubmit: (data: { name: string; whatsapp: string; email: string }) => void
 }
 
-export function ContactForm({ name, whatsapp, onSubmit }: ContactFormProps) {
+export function ContactForm({ name, whatsapp, email, onSubmit }: ContactFormProps) {
   const [nameValue, setNameValue] = useState(name)
   const [whatsappValue, setWhatsappValue] = useState(whatsapp)
+  const [emailValue, setEmailValue] = useState(email)
   const [touched, setTouched] = useState(false)
 
   const nameOk = nameValue.trim().length >= 2
   const whatsappOk = isValidWhatsApp(whatsappValue)
-  const valid = nameOk && whatsappOk
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue.trim())
+  const valid = nameOk && whatsappOk && emailOk
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setTouched(true)
     if (!valid) return
-    onSubmit({ name: nameValue.trim(), whatsapp: whatsappValue })
+    onSubmit({
+      name: nameValue.trim(),
+      whatsapp: whatsappValue,
+      email: emailValue.trim().toLowerCase(),
+    })
   }
 
   const fieldClass =
@@ -44,6 +51,26 @@ export function ContactForm({ name, whatsapp, onSubmit }: ContactFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
+      <div className="flex flex-col gap-2">
+        <label htmlFor="email" className="text-sm font-medium text-foreground">
+          E-mail
+        </label>
+        <input
+          id="email"
+          type="email"
+          autoComplete="email"
+          value={emailValue}
+          onChange={(e) => setEmailValue(e.target.value)}
+          placeholder="voce@exemplo.com"
+          className={fieldClass}
+        />
+        {touched && !emailOk && (
+          <span className="text-xs text-destructive">
+            Informe um e-mail válido para gerar o Pix.
+          </span>
+        )}
+      </div>
+
       <div className="flex flex-col gap-2">
         <label htmlFor="name" className="text-sm font-medium text-foreground">
           Nome

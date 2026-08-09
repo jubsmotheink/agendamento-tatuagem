@@ -9,9 +9,10 @@ import { formatLongDate } from '@/lib/booking/dates'
 type ReservationProps = {
   booking: BookingState
   onExpired: () => void
+  onConfirmed: () => void
 }
 
-export function Reservation({ booking, onExpired }: ReservationProps) {
+export function Reservation({ booking, onExpired, onConfirmed }: ReservationProps) {
   const [remainingSeconds, setRemainingSeconds] = useState(0)
   const hasExpired = useRef(false)
 
@@ -41,6 +42,27 @@ export function Reservation({ booking, onExpired }: ReservationProps) {
 
     return () => window.clearInterval(interval)
   }, [booking.expiresAt, onExpired])
+
+  useEffect(() => {
+    if (!booking.reservationId) return
+
+    const checkStatus = async () => {
+      const response = await fetch(`/api/reservations/${booking.reservationId}/status`)
+      if (!response.ok) return
+      const result = await response.json()
+      if (result.status === 'confirmado') onConfirmed()
+    }
+
+    checkStatus()
+    const interval = window.setInterval(checkStatus, 3000)
+    return () => window.clearInterval(interval)
+  }, [booking.reservationId, onConfirmed])
+
+  async function copyPix() {
+    if (!booking.pixQrCode) return
+    await navigator.clipboard.writeText(booking.pixQrCode)
+    window.alert('Código Pix copiado.')
+  }
 
   const timeLabel =
     STUDIO_TIME_SLOTS.find((slot) => slot.value === booking.time)?.label ??
@@ -93,9 +115,34 @@ export function Reservation({ booking, onExpired }: ReservationProps) {
           Pagamento do sinal
         </p>
         <p className="mt-2 font-serif text-2xl text-foreground">R$ 50,00</p>
-        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-          O pagamento será integrado aqui. Por enquanto, esta área está
-          reservada para o QR Code e as informações do Pix.
+        {booking.pixQrCodeBase64 && (
+          <img
+            src={`data:image/png;base64,${booking.pixQrCodeBase64}`}
+            alt="QR Code para pagamento do sinal por Pix"
+            className="mx-auto mt-5 size-52 rounded-lg bg-white p-2"
+          />
+        )}
+        {booking.pixQrCode && (
+          <button
+            type="button"
+            onClick={copyPix}
+            className="mt-5 w-full rounded-lg bg-primary px-4 py-3 text-xs font-medium uppercase tracking-widest text-primary-foreground"
+          >
+            Copiar código Pix
+          </button>
+        )}
+        {booking.pixTicketUrl && (
+          <a
+            href={booking.pixTicketUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 block text-xs text-muted-foreground underline"
+          >
+            Abrir instruções do Pix
+          </a>
+        )}
+        <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
+          Após o pagamento, esta tela será confirmada automaticamente.
         </p>
       </div>
 

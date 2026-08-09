@@ -14,7 +14,13 @@ export type BookingState = {
   time: string | null
   name: string
   whatsapp: string
+  email: string
   expiresAt: string | null
+  reservationId: number | null
+  pixOrderId: string | null
+  pixQrCode: string | null
+  pixQrCodeBase64: string | null
+  pixTicketUrl: string | null
 }
 
 export const initialBookingState: BookingState = {
@@ -22,5 +28,11 @@ export const initialBookingState: BookingState = {
   time: null,
   name: '',
   whatsapp: '',
+  email: '',
   expiresAt: null,
+  reservationId: null,
+  pixOrderId: null,
+  pixQrCode: null,
+  pixQrCodeBase64: null,
+  pixTicketUrl: null,
 }

@@ -14,6 +14,7 @@ export function Review({ booking, timeLabel, onConfirm }: ReviewProps) {
     { label: 'Data', value: booking.date ? formatLongDate(booking.date) : '—' },
     { label: 'Horário', value: timeLabel },
     { label: 'Nome', value: booking.name },
+    { label: 'E-mail', value: booking.email },
     { label: 'WhatsApp', value: booking.whatsapp },
   ]
 

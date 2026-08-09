@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { supabase } from '@/lib/supabase'
 import { ArrowLeft } from 'lucide-react'
 import { STUDIO_HANDLE, STUDIO_NAME, STUDIO_TIME_SLOTS } from '@/lib/booking/config'
 import { formatLongDate } from '@/lib/booking/dates'
@@ -29,44 +28,54 @@ export function BookingFlow() {
     setStep('contact')
   }
 
-  function submitContact(data: { name: string; whatsapp: string }) {
+  function submitContact(data: { name: string; whatsapp: string; email: string }) {
     setBooking((prev) => ({ ...prev, ...data }))
     setStep('review')
   }
 
   async function confirm() {
-  const expiresAt = new Date(Date.now() + 5 * 60 * 1000)
-
-  const { error } = await supabase
-    .from('agendamentos')
-    .insert({
-      nome: booking.name,
-      telefone: booking.whatsapp,
-      data: booking.date?.toISOString(),
-      horario: booking.time,
-      status: 'pendente',
-      expires_at: expiresAt.toISOString(),
+    const response = await fetch('/api/reservations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: booking.name,
+        whatsapp: booking.whatsapp,
+        email: booking.email,
+        date: booking.date?.toISOString(),
+        time: booking.time,
+      }),
     })
 
-  if (error) {
-    console.error(error)
-    return
+    const result = await response.json()
+    if (!response.ok) {
+      console.error(result)
+      window.alert(result.error ?? 'Não foi possível gerar o Pix. Tente novamente.')
+      return
+    }
+
+    setBooking((prev) => ({
+      ...prev,
+      expiresAt: result.expiresAt,
+      reservationId: result.reservationId,
+      pixOrderId: result.orderId,
+      pixQrCode: result.qrCode,
+      pixQrCodeBase64: result.qrCodeBase64,
+      pixTicketUrl: result.ticketUrl,
+    }))
+    setStep('reservation')
   }
-
-  setBooking((prev) => ({
-    ...prev,
-    expiresAt: expiresAt.toISOString(),
-  }))
-
-  setStep('reservation')
-}
 
   function restart() {
     setBooking(initialBookingState)
     setStep('schedule')
   }
 
-  function expireReservation() {
+  async function expireReservation() {
+    if (booking.reservationId) {
+      await fetch(`/api/reservations/${booking.reservationId}/expire`, {
+        method: 'POST',
+      }).catch(() => undefined)
+    }
     setStep('expired')
   }
 
@@ -127,6 +136,7 @@ export function BookingFlow() {
             <ContactForm
               name={booking.name}
               whatsapp={booking.whatsapp}
+              email={booking.email}
               onSubmit={submitContact}
             />
           </div>
@@ -148,7 +158,11 @@ export function BookingFlow() {
         )}
 
         {step === 'reservation' && (
-          <Reservation booking={booking} onExpired={expireReservation} />
+          <Reservation
+            booking={booking}
+            onExpired={expireReservation}
+            onConfirmed={() => setStep('confirmation')}
+          />
         )}
         {step === 'expired' && <Expired onRestart={restart} />}
         {step === 'confirmation' && (

@@ -32,6 +32,14 @@ export function Confirmation({ booking, onRestart }: ConfirmationProps) {
       <dl className="mt-8 w-full divide-y divide-border rounded-lg border border-border bg-card text-left">
         <div className="flex items-center justify-between px-5 py-4">
           <dt className="text-xs uppercase tracking-widest text-muted-foreground">
+            E-mail
+          </dt>
+          <dd className="max-w-[65%] break-all text-right text-sm text-foreground">
+            {booking.email}
+          </dd>
+        </div>
+        <div className="flex items-center justify-between px-5 py-4">
+          <dt className="text-xs uppercase tracking-widest text-muted-foreground">
             Data
           </dt>
           <dd className="text-sm text-foreground">
