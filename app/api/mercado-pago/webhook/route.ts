@@ -4,7 +4,7 @@ import { getPixOrder, isPaidOrder } from '@/lib/mercado-pago'
 import { createSupabaseAdmin } from '@/lib/supabase-admin'
 
 function isValidSignature(request: Request, dataId: string) {
-  const secret = process.env.MERCADO_PAGO_WEBHOOK_SECRET
+  const secret = process.env.MERCADO_PAGO_WEBHOOK_SECRET?.trim()
   const signature = request.headers.get('x-signature')
   const requestId = request.headers.get('x-request-id')
 
@@ -19,17 +19,30 @@ function isValidSignature(request: Request, dataId: string) {
 
   if (!values.ts || !values.v1) return false
 
-  let manifest = `id:${dataId.toLowerCase()};`
-  if (requestId) manifest += `request-id:${requestId};`
-  manifest += `ts:${values.ts};`
+  const received = values.v1.trim().toLowerCase()
+  if (!/^[a-f0-9]{64}$/.test(received)) return false
 
-  const expected = createHmac('sha256', secret).update(manifest).digest('hex')
-  const receivedBuffer = Buffer.from(values.v1)
-  const expectedBuffer = Buffer.from(expected)
+  const receivedBuffer = Buffer.from(received, 'hex')
+  const ids = [...new Set([dataId.toLowerCase(), dataId])]
+  const requestIds = requestId ? [requestId, null] : [null]
 
-  return (
-    receivedBuffer.length === expectedBuffer.length &&
-    timingSafeEqual(receivedBuffer, expectedBuffer)
+  return ids.some((id) =>
+    requestIds.some((candidateRequestId) => {
+      let manifest = `id:${id};`
+      if (candidateRequestId) {
+        manifest += `request-id:${candidateRequestId};`
+      }
+      manifest += `ts:${values.ts};`
+
+      const expected = createHmac('sha256', secret)
+        .update(manifest)
+        .digest()
+
+      return (
+        receivedBuffer.length === expected.length &&
+        timingSafeEqual(receivedBuffer, expected)
+      )
+    }),
   )
 }
 
