@@ -116,11 +116,16 @@ export function ContactForm({ name, whatsapp, email, onSubmit }: ContactFormProp
       </div>
 
       <button
-        type="submit"
-        className="mt-2 w-full rounded-lg bg-primary px-5 py-3.5 text-sm font-medium uppercase tracking-widest text-primary-foreground transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-      >
-        Revisar reserva
-      </button>
+  type="submit"
+  disabled={!valid}
+  className={`mt-2 w-full rounded-lg px-5 py-3.5 text-sm font-medium uppercase tracking-widest transition-all ${
+    valid
+      ? 'bg-primary text-primary-foreground hover:opacity-90 cursor-pointer'
+      : 'bg-secondary text-muted-foreground cursor-not-allowed opacity-70'
+  }`}
+>
+  Revisar reserva
+</button>
     </form>
   )
 }
