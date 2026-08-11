@@ -417,42 +417,45 @@ async function rescheduleReservation(reservation: Reservation) {
     </button>
   </div>
 )}
-                    {!showArchived && reservation.status !== 'cancelado' && (
-  <div className="mt-5 border-t border-border pt-4">
-    {editingId !== reservation.id ? (
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => {
-            setEditingId(reservation.id)
-            setNewDate(reservation.data.slice(0, 10))
-            setNewTime(formatTime(reservation.horario))
-          }}
-          className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <CalendarClock className="size-4" strokeWidth={1.5} />
-          Reagendar
-        </button>
+                    {!showArchived && (
+<div className="flex flex-wrap gap-2">
+  {reservation.status !== 'cancelado' && (
+    <>
+      <button
+        type="button"
+        onClick={() => {
+          setEditingId(reservation.id)
+          setNewDate(reservation.data.slice(0, 10))
+          setNewTime(formatTime(reservation.horario))
+        }}
+        className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <CalendarClock className="size-4" strokeWidth={1.5} />
+        Reagendar
+      </button>
 
-        <button
-          type="button"
-          onClick={() => cancelReservation(reservation)}
-          disabled={actionLoading === reservation.id}
-          className="flex items-center gap-2 rounded-lg border border-destructive/30 px-3 py-2 text-xs uppercase tracking-widest text-destructive transition-colors hover:bg-destructive/5 disabled:opacity-50"
-        >
-          <button
-  type="button"
-  onClick={() => archiveReservation(reservation)}
-  disabled={actionLoading === reservation.id}
-  className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
->
-  <Archive className="size-4" strokeWidth={1.5} />
-  Arquivar
-</button>
-          <X className="size-4" strokeWidth={1.5} />
-          Cancelar
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={() => cancelReservation(reservation)}
+        disabled={actionLoading === reservation.id}
+        className="flex items-center gap-2 rounded-lg border border-destructive/30 px-3 py-2 text-xs uppercase tracking-widest text-destructive transition-colors hover:bg-destructive/5 disabled:opacity-50"
+      >
+        <X className="size-4" strokeWidth={1.5} />
+        Cancelar
+      </button>
+    </>
+  )}
+
+  <button
+    type="button"
+    onClick={() => archiveReservation(reservation)}
+    disabled={actionLoading === reservation.id}
+    className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+  >
+    <Archive className="size-4" strokeWidth={1.5} />
+    Arquivar
+  </button>
+</div>
     ) : (
       <div className="flex flex-col gap-4 rounded-lg bg-secondary/40 p-4">
         <div>
