@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Plus, RefreshCw } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-
+import { BulkAvailabilityCalendar } from './bulk-availability-calendar'
 type Availability = {
   id: number
   data: string
@@ -228,6 +228,7 @@ async function toggleBlocked(item: Availability) {
 
   return (
     <div className="flex flex-col gap-6">
+      <BulkAvailabilityCalendar onSaved={loadAvailability} />
       <div className="rounded-xl border border-border bg-card p-5">
         <label className="text-xs uppercase tracking-widest text-muted-foreground">
           Data
