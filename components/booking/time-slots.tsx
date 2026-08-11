@@ -10,8 +10,13 @@ type TimeSlotsProps = {
   onSelect: (time: string) => void
 }
 
+type PublicTime = {
+  time: string
+  blocked: boolean
+}
+
 export function TimeSlots({ date, selected, onSelect }: TimeSlotsProps) {
-  const [availableTimes, setAvailableTimes] = useState<string[]>([])
+  const [availableTimes, setAvailableTimes] = useState<PublicTime[]>([])
   const [bookedTimes, setBookedTimes] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -100,21 +105,24 @@ export function TimeSlots({ date, selected, onSelect }: TimeSlotsProps) {
 
   return (
     <div className="flex flex-col gap-3">
-      {availableTimes.map((time) => {
-        const isSelected = selected === time
-        const isBooked = bookedTimes.includes(time)
+      {availableTimes.map((slot) => {
+        const isSelected = selected === slot.time
+        const isBooked = bookedTimes.includes(slot.time)
+        const isUnavailable = slot.blocked || isBooked
 
         return (
           <button
-            key={time}
+            key={slot.time}
             type="button"
-            onClick={() => !isBooked && onSelect(time)}
+            onClick={() =>
+              !isUnavailable && onSelect(slot.time)
+            }
             aria-pressed={isSelected}
-            disabled={isBooked}
+            disabled={isUnavailable}
             className={cn(
               'flex items-center justify-between rounded-lg border px-5 py-4 text-left transition-all',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-              isBooked
+              isUnavailable
                 ? 'cursor-not-allowed border-border bg-muted text-muted-foreground opacity-60'
                 : isSelected
                   ? 'border-accent bg-accent text-accent-foreground shadow-sm'
@@ -122,7 +130,7 @@ export function TimeSlots({ date, selected, onSelect }: TimeSlotsProps) {
             )}
           >
             <span className="font-serif text-xl">
-              {formatTimeLabel(time)}
+              {formatTimeLabel(slot.time)}
             </span>
 
             <span
@@ -133,7 +141,7 @@ export function TimeSlots({ date, selected, onSelect }: TimeSlotsProps) {
                   : 'text-muted-foreground',
               )}
             >
-              {isBooked ? 'Indisponível' : 'Disponível'}
+              {isUnavailable ? 'Indisponível' : 'Disponível'}
             </span>
           </button>
         )
