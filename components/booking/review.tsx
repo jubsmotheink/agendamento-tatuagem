@@ -1,15 +1,18 @@
 'use client'
 
+import { useState } from 'react'
 import { formatLongDate } from '@/lib/booking/dates'
 import type { BookingState } from '@/lib/booking/types'
 
 type ReviewProps = {
   booking: BookingState
   timeLabel: string
-  onConfirm: () => void
+  onConfirm: () => void | Promise<void>
 }
 
 export function Review({ booking, timeLabel, onConfirm }: ReviewProps) {
+  const [confirming, setConfirming] = useState(false)
+
   const rows = [
     { label: 'Data', value: booking.date ? formatLongDate(booking.date) : '—' },
     { label: 'Horário', value: timeLabel },
@@ -17,6 +20,18 @@ export function Review({ booking, timeLabel, onConfirm }: ReviewProps) {
     { label: 'E-mail', value: booking.email },
     { label: 'WhatsApp', value: booking.whatsapp },
   ]
+
+  async function handleConfirm() {
+    if (confirming) return
+
+    setConfirming(true)
+
+    try {
+      await onConfirm()
+    } finally {
+      setConfirming(false)
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -29,18 +44,27 @@ export function Review({ booking, timeLabel, onConfirm }: ReviewProps) {
             <dt className="text-xs uppercase tracking-widest text-muted-foreground">
               {row.label}
             </dt>
-            <dd className="text-right text-sm text-foreground">{row.value}</dd>
+
+            <dd className="text-right text-sm text-foreground">
+              {row.value}
+            </dd>
           </div>
         ))}
       </dl>
 
       <button
         type="button"
-        onClick={onConfirm}
-        className="w-full rounded-lg bg-primary px-5 py-3.5 text-sm font-medium uppercase tracking-widest text-primary-foreground transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        onClick={handleConfirm}
+        disabled={confirming}
+        className={`w-full rounded-lg px-5 py-3.5 text-sm font-medium uppercase tracking-widest transition-all ${
+          confirming
+            ? 'cursor-not-allowed bg-secondary text-muted-foreground opacity-70'
+            : 'bg-primary text-primary-foreground hover:opacity-90'
+        }`}
       >
-        Confirmar horário
+        {confirming ? 'Gerando Pix...' : 'Confirmar horário'}
       </button>
     </div>
   )
+}
 }
