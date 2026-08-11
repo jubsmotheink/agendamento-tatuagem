@@ -16,7 +16,7 @@ export async function GET(request: Request) {
 
   const { data, error } = await supabase
     .from('horarios_disponiveis')
-    .select('horario')
+    .select('horario, bloqueado')
     .eq('data', date)
     .eq('ativo', true)
     .order('horario')
@@ -30,7 +30,10 @@ export async function GET(request: Request) {
     )
   }
 
-  return NextResponse.json({
-    times: (data ?? []).map((item) => item.horario.slice(0, 5)),
-  })
+ return NextResponse.json({
+  times: (data ?? []).map((item) => ({
+    time: item.horario.slice(0, 5),
+    blocked: item.bloqueado,
+  })),
+})
 }
