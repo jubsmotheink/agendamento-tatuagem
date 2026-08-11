@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
+  Archive,
+  ArrowLeft,
   CalendarDays,
   LogOut,
   RefreshCw,
@@ -149,7 +151,17 @@ async function updateReservation(
     setActionLoading(null)
   }
 }
+async function archiveReservation(reservation: Reservation) {
+  const confirmed = window.confirm(
+    `Arquivar a reserva de ${reservation.nome}?`,
+  )
 
+  if (!confirmed) return
+
+  await updateReservation(reservation.id, {
+    action: 'archive',
+  })
+}
 async function cancelReservation(reservation: Reservation) {
   const confirmed = window.confirm(
     `Cancelar a reserva de ${reservation.nome} em ${formatDate(
@@ -207,14 +219,25 @@ async function rescheduleReservation(reservation: Reservation) {
             </h1>
           </div>
 
-          <button
-            type="button"
-            onClick={logout}
-            className="flex items-center gap-2 self-start text-xs uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <LogOut className="size-4" strokeWidth={1.5} />
-            Sair
-          </button>
+         <div className="flex flex-wrap gap-4">
+  <button
+    type="button"
+    onClick={() => router.push('/')}
+    className="flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
+  >
+    <ArrowLeft className="size-4" strokeWidth={1.5} />
+    Ver agenda
+  </button>
+
+  <button
+    type="button"
+    onClick={logout}
+    className="flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
+  >
+    <LogOut className="size-4" strokeWidth={1.5} />
+    Sair
+  </button>
+</div>
         </header>
 
         <nav className="mt-6 flex gap-2 rounded-xl border border-border bg-card p-1.5">
@@ -382,6 +405,15 @@ async function rescheduleReservation(reservation: Reservation) {
           disabled={actionLoading === reservation.id}
           className="flex items-center gap-2 rounded-lg border border-destructive/30 px-3 py-2 text-xs uppercase tracking-widest text-destructive transition-colors hover:bg-destructive/5 disabled:opacity-50"
         >
+          <button
+  type="button"
+  onClick={() => archiveReservation(reservation)}
+  disabled={actionLoading === reservation.id}
+  className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+>
+  <Archive className="size-4" strokeWidth={1.5} />
+  Arquivar
+</button>
           <X className="size-4" strokeWidth={1.5} />
           Cancelar
         </button>
