@@ -51,13 +51,14 @@ export async function GET(request: Request) {
   }
 
   const supabase = createSupabaseAdmin()
-
+const { searchParams } = new URL(request.url)
+const archived = searchParams.get('archived') === 'true'
   const { data, error } = await supabase
     .from('agendamentos')
   .select(
   'id, created_at, nome, telefone, email, data, horario, status, pagamento_status, arquivado',
 )
-.eq('arquivado', false)
+.eq('arquivado', archived)
 .order('data', { ascending: true })
     .order('horario', { ascending: true })
 
