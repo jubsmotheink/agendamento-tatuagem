@@ -417,8 +417,10 @@ async function rescheduleReservation(reservation: Reservation) {
     </button>
   </div>
 )}
-                    {!showArchived && (
-<div className="flex flex-wrap gap-2">
+                   {!showArchived && (
+  <div className="mt-5 border-t border-border pt-4">
+    {editingId !== reservation.id ? (
+      <div className="flex flex-wrap gap-2">
   {reservation.status !== 'cancelado' && (
     <>
       <button
