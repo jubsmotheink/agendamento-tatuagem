@@ -37,6 +37,7 @@ export default function AdminPage() {
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [reservationsLoading, setReservationsLoading] = useState(false)
   const [reservationsError, setReservationsError] = useState('')
+  const [showArchived, setShowArchived] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
 const [newDate, setNewDate] = useState('')
 const [newTime, setNewTime] = useState('10:00')
@@ -60,11 +61,10 @@ const [actionLoading, setActionLoading] = useState<number | null>(null)
   }, [router])
 
   useEffect(() => {
-    if (!loading && section === 'reservas') {
-      loadReservations()
-    }
-  }, [loading, section])
-
+  if (!loading && section === 'reservas') {
+    loadReservations()
+  }
+}, [loading, section, showArchived])
   async function loadReservations() {
     setReservationsLoading(true)
     setReservationsError('')
@@ -79,12 +79,15 @@ const [actionLoading, setActionLoading] = useState<number | null>(null)
     }
 
     try {
-      const response = await fetch('/api/admin/reservations', {
+      const response = await fetch(
+  `/api/admin/reservations?archived=${showArchived}`,
+  {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
-        cache: 'no-store',
-      })
+             cache: 'no-store',
+    },
+  )
 
       const result = await response.json()
 
@@ -150,6 +153,17 @@ async function updateReservation(
   } finally {
     setActionLoading(null)
   }
+}
+  async function restoreReservation(reservation: Reservation) {
+  const confirmed = window.confirm(
+    `Restaurar a reserva de ${reservation.nome}?`,
+  )
+
+  if (!confirmed) return
+
+  await updateReservation(reservation.id, {
+    action: 'restore',
+  })
 }
 async function archiveReservation(reservation: Reservation) {
   const confirmed = window.confirm(
@@ -298,21 +312,30 @@ async function rescheduleReservation(reservation: Reservation) {
                   </p>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={loadReservations}
-                  disabled={reservationsLoading}
-                  className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
-                >
-                  <RefreshCw
-                    className={`size-4 ${
-                      reservationsLoading ? 'animate-spin' : ''
-                    }`}
-                    strokeWidth={1.5}
-                  />
-                  Atualizar
-                </button>
-              </div>
+               <div className="flex flex-wrap gap-2">
+  <button
+    type="button"
+    onClick={() => setShowArchived((current) => !current)}
+    className="rounded-lg border border-border bg-card px-3 py-2 text-xs uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
+  >
+    {showArchived ? 'Ver atuais' : 'Ver arquivadas'}
+  </button>
+
+  <button
+    type="button"
+    onClick={loadReservations}
+    disabled={reservationsLoading}
+    className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+  >
+    <RefreshCw
+      className={`size-4 ${
+        reservationsLoading ? 'animate-spin' : ''
+      }`}
+      strokeWidth={1.5}
+    />
+    Atualizar
+  </button>
+</div>
 
               {reservationsLoading && reservations.length === 0 && (
                 <div className="rounded-xl border border-border bg-card p-6">
@@ -382,7 +405,19 @@ async function rescheduleReservation(reservation: Reservation) {
                         value={`#${reservation.id}`}
                       />
                     </dl>
-                    {reservation.status !== 'cancelado' && (
+                    {showArchived && (
+  <div className="mt-5 border-t border-border pt-4">
+    <button
+      type="button"
+      onClick={() => restoreReservation(reservation)}
+      disabled={actionLoading === reservation.id}
+      className="rounded-lg border border-border px-3 py-2 text-xs uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+    >
+      Restaurar
+    </button>
+  </div>
+)}
+                    {!showArchived && reservation.status !== 'cancelado' && (
   <div className="mt-5 border-t border-border pt-4">
     {editingId !== reservation.id ? (
       <div className="flex flex-wrap gap-2">
