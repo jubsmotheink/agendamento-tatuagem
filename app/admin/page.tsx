@@ -11,7 +11,7 @@ import {
   X,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-
+import { AvailabilityManager } from '@/components/admin/availability-manager'
 type AdminSection = 'agenda' | 'reservas'
 
 type Reservation = {
@@ -258,12 +258,7 @@ async function rescheduleReservation(reservation: Reservation) {
                 </p>
               </div>
 
-              <div className="rounded-xl border border-border bg-card p-6">
-                <p className="text-sm text-muted-foreground">
-                  O gerenciamento de horários será conectado aqui no próximo
-                  passo.
-                </p>
-              </div>
+              <AvailabilityManager />
             </div>
           )}
 
