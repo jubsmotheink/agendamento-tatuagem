@@ -46,59 +46,63 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   if (!(await isAdmin(request))) {
-    return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 })
+    return NextResponse.json(
+      { error: 'Não autorizado.' },
+      { status: 401 },
+    )
   }
 
-  const { date, time } = await request.json()
+  const body = await request.json()
 
-  if (!date || !time) {
+  const dates = Array.isArray(body.dates)
+    ? body.dates
+    : body.date
+      ? [body.date]
+      : []
+
+  const times = Array.isArray(body.times)
+    ? body.times
+    : body.time
+      ? [body.time]
+      : []
+
+  if (dates.length === 0 || times.length === 0) {
     return NextResponse.json(
-      { error: 'Informe data e horário.' },
+      { error: 'Informe pelo menos uma data e um horário.' },
       { status: 400 },
     )
   }
 
   const supabase = createSupabaseAdmin()
 
-  const { data: existing } = await supabase
-    .from('horarios_disponiveis')
-    .select('id')
-    .eq('data', date)
-    .eq('horario', time)
-    .maybeSingle()
-
-  if (existing) {
-    const { error } = await supabase
-      .from('horarios_disponiveis')
-      .update({ ativo: true })
-      .eq('id', existing.id)
-
-    if (error) {
-      return NextResponse.json(
-        { error: 'Não foi possível reativar o horário.' },
-        { status: 500 },
-      )
-    }
-
-    return NextResponse.json({ ok: true })
-  }
-
-  const { error } = await supabase
-    .from('horarios_disponiveis')
-    .insert({
+  const rows = dates.flatMap((date: string) =>
+    times.map((time: string) => ({
       data: date,
       horario: time,
       ativo: true,
+      bloqueado: false,
+    })),
+  )
+
+  const { error } = await supabase
+    .from('horarios_disponiveis')
+    .upsert(rows, {
+      onConflict: 'data,horario',
     })
 
   if (error) {
+    console.error('Erro ao adicionar horários em lote:', error)
+
     return NextResponse.json(
-      { error: 'Não foi possível adicionar o horário.' },
+      { error: 'Não foi possível adicionar os horários.' },
       { status: 500 },
     )
   }
 
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({
+    ok: true,
+    created: rows.length,
+  })
 }
 
 export async function PATCH(request: Request) {
