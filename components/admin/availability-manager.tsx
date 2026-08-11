@@ -9,6 +9,7 @@ type Availability = {
   data: string
   horario: string
   ativo: boolean
+  bloqueado: boolean
 }
 
 const DEFAULT_TIMES = ['10:00', '14:00', '17:00']
@@ -167,7 +168,50 @@ export function AvailabilityManager() {
       setSaving(false)
     }
   }
+async function toggleBlocked(item: Availability) {
+  setSaving(true)
+  setError('')
 
+  const token = await getAccessToken()
+
+  if (!token) {
+    setError('Sessão expirada. Entre novamente no painel.')
+    setSaving(false)
+    return
+  }
+
+  try {
+    const response = await fetch('/api/admin/availability', {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        id: item.id,
+        bloqueado: !item.bloqueado,
+      }),
+    })
+
+    const result = await response.json()
+
+    if (!response.ok) {
+      throw new Error(
+        result.error ?? 'Não foi possível alterar o bloqueio.',
+      )
+    }
+
+    await loadAvailability()
+  } catch (err) {
+    setError(
+      err instanceof Error
+        ? err.message
+        : 'Não foi possível alterar o bloqueio.',
+    )
+  } finally {
+    setSaving(false)
+  }
+}
   const selectedItems = useMemo(
     () =>
       items
@@ -290,23 +334,40 @@ export function AvailabilityManager() {
                   {item.horario.slice(0, 5)}
                 </p>
 
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  {item.ativo ? 'Disponível' : 'Desativado'}
-                </p>
+               <p className="mt-0.5 text-xs text-muted-foreground">
+  {!item.ativo
+    ? 'Oculto'
+    : item.bloqueado
+      ? 'Bloqueado'
+      : 'Disponível'}
+</p>
               </div>
 
-              <button
-                type="button"
-                disabled={saving}
-                onClick={() => toggleAvailability(item)}
-                className={`rounded-lg px-3 py-2 text-xs uppercase tracking-widest ${
-                  item.ativo
-                    ? 'border border-destructive/30 text-destructive'
-                    : 'bg-primary text-primary-foreground'
-                }`}
-              >
-                {item.ativo ? 'Desativar' : 'Reativar'}
-              </button>
+              <div className="flex flex-wrap justify-end gap-2">
+  {item.ativo && (
+    <button
+      type="button"
+      disabled={saving}
+      onClick={() => toggleBlocked(item)}
+      className="rounded-lg border border-border px-3 py-2 text-xs uppercase tracking-widest text-muted-foreground"
+    >
+      {item.bloqueado ? 'Desbloquear' : 'Bloquear'}
+    </button>
+  )}
+
+  <button
+    type="button"
+    disabled={saving}
+    onClick={() => toggleAvailability(item)}
+    className={`rounded-lg px-3 py-2 text-xs uppercase tracking-widest ${
+      item.ativo
+        ? 'border border-destructive/30 text-destructive'
+        : 'bg-primary text-primary-foreground'
+    }`}
+  >
+    {item.ativo ? 'Ocultar' : 'Reativar'}
+  </button>
+</div>
             </div>
           ))}
         </div>
