@@ -96,6 +96,23 @@ if (action === 'archive') {
 
   return NextResponse.json({ ok: true })
 }
+  if (action === 'restore') {
+  const { error } = await supabase
+    .from('agendamentos')
+    .update({
+      arquivado: false,
+    })
+    .eq('id', reservationId)
+
+  if (error) {
+    return NextResponse.json(
+      { error: 'Não foi possível restaurar a reserva.' },
+      { status: 500 },
+    )
+  }
+
+  return NextResponse.json({ ok: true })
+}
   if (action === 'cancel') {
     if (reservation.status === 'cancelado') {
       return NextResponse.json({ ok: true })
