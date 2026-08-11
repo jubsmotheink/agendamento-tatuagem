@@ -15,6 +15,12 @@ export function Confirmation({ booking, onRestart }: ConfirmationProps) {
     STUDIO_TIME_SLOTS.find((s) => s.value === booking.time)?.label ?? booking.time
   const dateLabel = booking.date ? formatLongDate(booking.date) : ''
   const whatsappLink = buildWhatsappLink(dateLabel, timeLabel ?? '')
+  const studioAddress =
+  'Estrada Roberto Burle Marx, 8624, Barra de Guaratiba, Rio de Janeiro - RJ'
+
+const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+  studioAddress,
+)}`
 
   return (
     <div className="flex flex-col items-center text-center">
@@ -65,6 +71,26 @@ export function Confirmation({ booking, onRestart }: ConfirmationProps) {
           <dd className="text-sm text-foreground">{booking.whatsapp}</dd>
         </div>
       </dl>
+      <div className="mt-6 w-full rounded-lg border border-border bg-card px-5 py-5 text-left">
+  <p className="text-xs uppercase tracking-widest text-muted-foreground">
+    Local do atendimento
+  </p>
+
+  <p className="mt-3 text-sm leading-relaxed text-foreground">
+    Estrada Roberto Burle Marx, 8624
+    <br />
+    Barra de Guaratiba — Rio de Janeiro/RJ
+  </p>
+
+  <a
+    href={mapsLink}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="mt-5 flex w-full items-center justify-center rounded-lg border border-border px-5 py-3 text-xs font-medium uppercase tracking-widest text-foreground transition-colors hover:bg-secondary"
+  >
+    Como chegar
+  </a>
+</div>
 
       <a
         href={whatsappLink}
