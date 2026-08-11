@@ -67,4 +67,3 @@ export function Review({ booking, timeLabel, onConfirm }: ReviewProps) {
     </div>
   )
 }
-}
