@@ -30,7 +30,7 @@ export async function GET(request: Request) {
 
   const { data, error } = await supabase
     .from('horarios_disponiveis')
-    .select('id, data, horario, ativo')
+    .select('id, data, horario, ativo, bloqueado')
     .order('data')
     .order('horario')
 
@@ -106,21 +106,37 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 })
   }
 
-  const { id, ativo } = await request.json()
+  const { id, ativo, bloqueado } = await request.json()
 
-  if (!id || typeof ativo !== 'boolean') {
-    return NextResponse.json(
-      { error: 'Dados inválidos.' },
-      { status: 400 },
-    )
-  }
+if (
+  !id ||
+  (typeof ativo !== 'boolean' && typeof bloqueado !== 'boolean')
+) {
+  return NextResponse.json(
+    { error: 'Dados inválidos.' },
+    { status: 400 },
+  )
+}
 
-  const supabase = createSupabaseAdmin()
+const supabase = createSupabaseAdmin()
 
-  const { error } = await supabase
-    .from('horarios_disponiveis')
-    .update({ ativo })
-    .eq('id', id)
+const updates: {
+  ativo?: boolean
+  bloqueado?: boolean
+} = {}
+
+if (typeof ativo === 'boolean') {
+  updates.ativo = ativo
+}
+
+if (typeof bloqueado === 'boolean') {
+  updates.bloqueado = bloqueado
+}
+
+const { error } = await supabase
+  .from('horarios_disponiveis')
+  .update(updates)
+  .eq('id', id)
 
   if (error) {
     return NextResponse.json(
