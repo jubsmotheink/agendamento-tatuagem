@@ -54,10 +54,11 @@ export async function GET(request: Request) {
 
   const { data, error } = await supabase
     .from('agendamentos')
-    .select(
-      'id, created_at, nome, telefone, email, data, horario, status, pagamento_status',
-    )
-    .order('data', { ascending: true })
+  .select(
+  'id, created_at, nome, telefone, email, data, horario, status, pagamento_status, arquivado',
+)
+.eq('arquivado', false)
+.order('data', { ascending: true })
     .order('horario', { ascending: true })
 
   if (error) {
