@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
-import { getAvailableTimes } from '@/lib/booking/config'
 
 type TimeSlotsProps = {
   date: Date
@@ -12,58 +11,126 @@ type TimeSlotsProps = {
 }
 
 export function TimeSlots({ date, selected, onSelect }: TimeSlotsProps) {
+  const [availableTimes, setAvailableTimes] = useState<string[]>([])
   const [bookedTimes, setBookedTimes] = useState<string[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
   useEffect(() => {
-    async function loadBookedTimes() {
+    async function loadTimes() {
+      setLoading(true)
+      setError('')
+
       const dateString = date.toLocaleDateString('en-CA')
-console.log('DATA SELECIONADA:', dateString)
 
-      const { data, error } = await supabase
-  .rpc('get_booked_times', { p_date: dateString })
+      try {
+        const [availabilityResponse, bookedResponse] = await Promise.all([
+          fetch(`/api/availability?date=${dateString}`, {
+            cache: 'no-store',
+          }),
+          supabase.rpc('get_booked_times', {
+            p_date: dateString,
+          }),
+        ])
 
-      if (error) {
-  console.error('ERRO AO BUSCAR HORÁRIOS:', error)
-  return
-}
+        const availabilityResult = await availabilityResponse.json()
 
-console.log('HORÁRIOS RESERVADOS:', data)
+        if (!availabilityResponse.ok) {
+          throw new Error(
+            availabilityResult.error ??
+              'Não foi possível carregar os horários.',
+          )
+        }
 
-      setBookedTimes(
-        (data ?? []).map((booking: { horario: string }) => booking.horario),
-      )
+        if (bookedResponse.error) {
+          throw bookedResponse.error
+        }
+
+        setAvailableTimes(availabilityResult.times ?? [])
+
+        setBookedTimes(
+          (bookedResponse.data ?? []).map(
+            (booking: { horario: string }) =>
+              booking.horario.slice(0, 5),
+          ),
+        )
+      } catch (err) {
+        console.error(err)
+
+        setError(
+          'Não foi possível carregar os horários desta data.',
+        )
+      } finally {
+        setLoading(false)
+      }
     }
 
-    loadBookedTimes()
+    loadTimes()
   }, [date])
-  const times = getAvailableTimes(date)
+
+  if (loading) {
+    return (
+      <div className="rounded-lg border border-border bg-card px-5 py-4">
+        <p className="text-sm text-muted-foreground">
+          Carregando horários...
+        </p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-lg border border-border bg-card px-5 py-4">
+        <p className="text-sm text-destructive">
+          {error}
+        </p>
+      </div>
+    )
+  }
+
+  if (availableTimes.length === 0) {
+    return (
+      <div className="rounded-lg border border-border bg-card px-5 py-4">
+        <p className="text-sm text-muted-foreground">
+          Nenhum horário disponível nesta data.
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-3">
-      {times.map((slot) => {
-        const isSelected = selected === slot.value
-        const isBooked = bookedTimes.includes(slot.value)
+      {availableTimes.map((time) => {
+        const isSelected = selected === time
+        const isBooked = bookedTimes.includes(time)
+
         return (
           <button
-            key={slot.value}
+            key={time}
             type="button"
-            onClick={() => !isBooked && onSelect(slot.value)}
+            onClick={() => !isBooked && onSelect(time)}
             aria-pressed={isSelected}
             disabled={isBooked}
             className={cn(
-  'flex items-center justify-between rounded-lg border px-5 py-4 text-left transition-all',
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-  isBooked
-    ? 'border-border bg-muted text-muted-foreground opacity-60 cursor-not-allowed'
-    : isSelected
-      ? 'border-accent bg-accent text-accent-foreground shadow-sm'
-      : 'border-border bg-card text-foreground hover:border-accent/50',
-)}
+              'flex items-center justify-between rounded-lg border px-5 py-4 text-left transition-all',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+              isBooked
+                ? 'cursor-not-allowed border-border bg-muted text-muted-foreground opacity-60'
+                : isSelected
+                  ? 'border-accent bg-accent text-accent-foreground shadow-sm'
+                  : 'border-border bg-card text-foreground hover:border-accent/50',
+            )}
           >
-            <span className="font-serif text-xl">{slot.label}</span>
+            <span className="font-serif text-xl">
+              {formatTimeLabel(time)}
+            </span>
+
             <span
               className={cn(
                 'text-xs uppercase tracking-widest',
-                isSelected ? 'text-accent-foreground/70' : 'text-muted-foreground',
+                isSelected
+                  ? 'text-accent-foreground/70'
+                  : 'text-muted-foreground',
               )}
             >
               {isBooked ? 'Indisponível' : 'Disponível'}
@@ -73,4 +140,12 @@ console.log('HORÁRIOS RESERVADOS:', data)
       })}
     </div>
   )
+}
+
+function formatTimeLabel(time: string) {
+  const [hours, minutes] = time.split(':')
+
+  return minutes === '00'
+    ? `${Number(hours)}h`
+    : `${Number(hours)}h${minutes}`
 }
