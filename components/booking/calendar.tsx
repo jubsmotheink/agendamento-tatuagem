@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -21,31 +21,79 @@ type CalendarProps = {
 
 export function Calendar({ selected, onSelect }: CalendarProps) {
   const today = startOfDay(new Date())
+
   const [viewMonth, setViewMonth] = useState<Date>(
     selected ? new Date(selected) : today,
   )
 
+  const [availableDates, setAvailableDates] = useState<string[]>([])
+  const [loadingAvailability, setLoadingAvailability] = useState(true)
+
   const days = getCalendarDays(viewMonth)
   const canGoBack = !isSameMonth(viewMonth, today)
+
+  useEffect(() => {
+    async function loadMonthAvailability() {
+      setLoadingAvailability(true)
+
+      const year = viewMonth.getFullYear()
+      const month = viewMonth.getMonth() + 1
+
+      try {
+        const response = await fetch(
+          `/api/availability/month?year=${year}&month=${month}`,
+          {
+            cache: 'no-store',
+          },
+        )
+
+        const result = await response.json()
+
+        if (!response.ok) {
+          throw new Error(
+            result.error ?? 'Não foi possível carregar o calendário.',
+          )
+        }
+
+        setAvailableDates(result.availableDates ?? [])
+      } catch (error) {
+        console.error('Erro ao carregar disponibilidade mensal:', error)
+
+        setAvailableDates([])
+      } finally {
+        setLoadingAvailability(false)
+      }
+    }
+
+    loadMonthAvailability()
+  }, [viewMonth])
+
+  function dateKey(date: Date) {
+    return date.toLocaleDateString('en-CA')
+  }
 
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
         <button
           type="button"
-          onClick={() => canGoBack && setViewMonth(addMonths(viewMonth, -1))}
+          onClick={() =>
+            canGoBack && setViewMonth(addMonths(viewMonth, -1))
+          }
           disabled={!canGoBack}
           aria-label="Mês anterior"
           className="flex size-9 items-center justify-center rounded-full text-foreground/70 transition-colors hover:bg-secondary disabled:pointer-events-none disabled:opacity-30"
         >
           <ChevronLeft className="size-4" strokeWidth={1.5} />
         </button>
+
         <span
           className="font-serif text-lg tracking-wide text-foreground"
           aria-live="polite"
         >
           {formatMonthYear(viewMonth)}
         </span>
+
         <button
           type="button"
           onClick={() => setViewMonth(addMonths(viewMonth, 1))}
@@ -69,8 +117,16 @@ export function Calendar({ selected, onSelect }: CalendarProps) {
 
       <div className="grid grid-cols-7 gap-1">
         {days.map(({ date, outside }, i) => {
-          const disabled = outside || isPast(date)
-          const isSelected = selected != null && isSameDay(date, selected)
+          const hasAvailability = availableDates.includes(dateKey(date))
+
+          const disabled =
+            outside ||
+            isPast(date) ||
+            (!loadingAvailability && !hasAvailability)
+
+          const isSelected =
+            selected != null && isSameDay(date, selected)
+
           const isToday = isSameDay(date, today)
 
           return (
@@ -94,7 +150,10 @@ export function Calendar({ selected, onSelect }: CalendarProps) {
                       'text-foreground hover:bg-secondary',
                     isSelected &&
                       'bg-accent text-accent-foreground shadow-sm',
-                    !isSelected && isToday && !disabled && 'ring-1 ring-border',
+                    !isSelected &&
+                      isToday &&
+                      !disabled &&
+                      'ring-1 ring-border',
                   )}
                 >
                   {date.getDate()}
