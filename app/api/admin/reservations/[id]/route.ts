@@ -79,7 +79,23 @@ export async function PATCH(
       { status: 404 },
     )
   }
+if (action === 'archive') {
+  const { error } = await supabase
+    .from('agendamentos')
+    .update({
+      arquivado: true,
+    })
+    .eq('id', reservationId)
 
+  if (error) {
+    return NextResponse.json(
+      { error: 'Não foi possível arquivar a reserva.' },
+      { status: 500 },
+    )
+  }
+
+  return NextResponse.json({ ok: true })
+}
   if (action === 'cancel') {
     if (reservation.status === 'cancelado') {
       return NextResponse.json({ ok: true })
