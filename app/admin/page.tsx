@@ -7,6 +7,8 @@ import {
   LogOut,
   RefreshCw,
   Users,
+  CalendarClock,
+  X,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
@@ -33,6 +35,10 @@ export default function AdminPage() {
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [reservationsLoading, setReservationsLoading] = useState(false)
   const [reservationsError, setReservationsError] = useState('')
+  const [editingId, setEditingId] = useState<number | null>(null)
+const [newDate, setNewDate] = useState('')
+const [newTime, setNewTime] = useState('10:00')
+const [actionLoading, setActionLoading] = useState<number | null>(null)
 
   useEffect(() => {
     async function checkSession() {
@@ -97,7 +103,82 @@ export default function AdminPage() {
       setReservationsLoading(false)
     }
   }
+async function updateReservation(
+  id: number,
+  body: Record<string, string>,
+) {
+  setActionLoading(id)
+  setReservationsError('')
 
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+
+  if (!session) {
+    router.replace('/admin/login')
+    return false
+  }
+
+  try {
+    const response = await fetch(`/api/admin/reservations/${id}`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    })
+
+    const result = await response.json()
+
+    if (!response.ok) {
+      throw new Error(result.error ?? 'Não foi possível alterar a reserva.')
+    }
+
+    await loadReservations()
+    return true
+  } catch (error) {
+    setReservationsError(
+      error instanceof Error
+        ? error.message
+        : 'Não foi possível alterar a reserva.',
+    )
+
+    return false
+  } finally {
+    setActionLoading(null)
+  }
+}
+
+async function cancelReservation(reservation: Reservation) {
+  const confirmed = window.confirm(
+    `Cancelar a reserva de ${reservation.nome} em ${formatDate(
+      reservation.data,
+    )} às ${formatTime(reservation.horario)}?\n\nIsso não fará estorno do pagamento.`,
+  )
+
+  if (!confirmed) return
+
+  await updateReservation(reservation.id, {
+    action: 'cancel',
+  })
+}
+
+async function rescheduleReservation(reservation: Reservation) {
+  if (!newDate || !newTime) return
+
+  const success = await updateReservation(reservation.id, {
+    action: 'reschedule',
+    date: newDate,
+    time: newTime,
+  })
+
+  if (success) {
+    setEditingId(null)
+    setNewDate('')
+    setNewTime('10:00')
+  }
+}
   async function logout() {
     await supabase.auth.signOut()
     router.replace('/admin/login')
@@ -283,6 +364,106 @@ export default function AdminPage() {
                         value={`#${reservation.id}`}
                       />
                     </dl>
+                    {reservation.status !== 'cancelado' && (
+  <div className="mt-5 border-t border-border pt-4">
+    {editingId !== reservation.id ? (
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            setEditingId(reservation.id)
+            setNewDate(reservation.data.slice(0, 10))
+            setNewTime(formatTime(reservation.horario))
+          }}
+          className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <CalendarClock className="size-4" strokeWidth={1.5} />
+          Reagendar
+        </button>
+
+        <button
+          type="button"
+          onClick={() => cancelReservation(reservation)}
+          disabled={actionLoading === reservation.id}
+          className="flex items-center gap-2 rounded-lg border border-destructive/30 px-3 py-2 text-xs uppercase tracking-widest text-destructive transition-colors hover:bg-destructive/5 disabled:opacity-50"
+        >
+          <X className="size-4" strokeWidth={1.5} />
+          Cancelar
+        </button>
+      </div>
+    ) : (
+      <div className="flex flex-col gap-4 rounded-lg bg-secondary/40 p-4">
+        <div>
+          <label className="mb-1.5 block text-xs uppercase tracking-widest text-muted-foreground">
+            Nova data
+          </label>
+
+          <input
+            type="date"
+            value={newDate}
+            onChange={(event) => setNewDate(event.target.value)}
+            className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground"
+          />
+        </div>
+
+        <div>
+          <p className="mb-2 text-xs uppercase tracking-widest text-muted-foreground">
+            Novo horário
+          </p>
+
+          <div className="flex flex-wrap gap-2">
+            {['10:00', '14:00', '17:00'].map((time) => (
+              <button
+                key={time}
+                type="button"
+                onClick={() => setNewTime(time)}
+                className={`rounded-lg border px-4 py-2 text-sm transition-colors ${
+                  newTime === time
+                    ? 'border-primary bg-primary text-primary-foreground'
+                    : 'border-border bg-background text-foreground'
+                }`}
+              >
+                {time}
+              </button>
+            ))}
+          </div>
+
+          <input
+            type="time"
+            value={newTime}
+            onChange={(event) => setNewTime(event.target.value)}
+            className="mt-3 w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground"
+          />
+
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            Use o campo acima apenas para um horário excepcional.
+          </p>
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => rescheduleReservation(reservation)}
+            disabled={!newDate || !newTime || actionLoading === reservation.id}
+            className="flex-1 rounded-lg bg-primary px-4 py-3 text-xs uppercase tracking-widest text-primary-foreground disabled:opacity-50"
+          >
+            {actionLoading === reservation.id
+              ? 'Salvando...'
+              : 'Confirmar reagendamento'}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setEditingId(null)}
+            className="rounded-lg border border-border px-4 py-3 text-xs uppercase tracking-widest text-muted-foreground"
+          >
+            Voltar
+          </button>
+        </div>
+      </div>
+    )}
+  </div>
+)}
                   </article>
                 ))}
               </div>
