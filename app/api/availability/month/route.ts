@@ -77,11 +77,11 @@ export async function GET(request: Request) {
     }
   }
 
-  const unavailableDates = [...byDate.entries()]
-    .filter(([, hasFreeSlot]) => !hasFreeSlot)
-    .map(([date]) => date)
+ const availableDates = [...byDate.entries()]
+  .filter(([, hasFreeSlot]) => hasFreeSlot)
+  .map(([date]) => date)
 
-  return NextResponse.json({
-    unavailableDates,
-  })
+return NextResponse.json({
+  availableDates,
+})
 }
