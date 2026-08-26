@@ -598,12 +598,10 @@ function formatTime(time: string) {
 function formatDate(value: string) {
   if (!value) return '—'
 
-  const date = new Date(value)
+  const [datePart] = value.split('T')
+  const [year, month, day] = datePart.split('-').map(Number)
 
-  return new Intl.DateTimeFormat('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    timeZone: 'America/Sao_Paulo',
-  }).format(date)
+  if (!year || !month || !day) return '—'
+
+  return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`
 }
