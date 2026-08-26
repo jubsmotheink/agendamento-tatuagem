@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server'
 import { createSupabaseAdmin } from '@/lib/supabase-admin'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
+const NO_STORE_HEADERS = {
+  'Cache-Control': 'no-store, max-age=0',
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
 
@@ -10,7 +17,7 @@ export async function GET(request: Request) {
   if (!year || !month || month < 1 || month > 12) {
     return NextResponse.json(
       { error: 'Mês inválido.' },
-      { status: 400 },
+      { status: 400, headers: NO_STORE_HEADERS },
     )
   }
 
@@ -32,7 +39,7 @@ export async function GET(request: Request) {
   if (availabilityError) {
     return NextResponse.json(
       { error: 'Não foi possível carregar o calendário.' },
-      { status: 500 },
+      { status: 500, headers: NO_STORE_HEADERS },
     )
   }
 
@@ -46,7 +53,7 @@ export async function GET(request: Request) {
   if (reservationsError) {
     return NextResponse.json(
       { error: 'Não foi possível carregar as reservas.' },
-      { status: 500 },
+      { status: 500, headers: NO_STORE_HEADERS },
     )
   }
 
@@ -83,5 +90,5 @@ export async function GET(request: Request) {
 
 return NextResponse.json({
   availableDates,
-})
+}, { headers: NO_STORE_HEADERS })
 }

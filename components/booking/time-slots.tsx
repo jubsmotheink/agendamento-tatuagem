@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 
@@ -21,57 +21,73 @@ export function TimeSlots({ date, selected, onSelect }: TimeSlotsProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  const loadTimes = useCallback(async () => {
+    setLoading(true)
+    setError('')
+
+    const dateString = date.toLocaleDateString('en-CA')
+
+    try {
+      const [availabilityResponse, bookedResponse] = await Promise.all([
+        fetch(`/api/availability?date=${dateString}`, {
+          cache: 'no-store',
+        }),
+        supabase.rpc('get_booked_times', {
+          p_date: dateString,
+        }),
+      ])
+
+      const availabilityResult = await availabilityResponse.json()
+
+      if (!availabilityResponse.ok) {
+        throw new Error(
+          availabilityResult.error ??
+            'Não foi possível carregar os horários.',
+        )
+      }
+
+      if (bookedResponse.error) {
+        throw bookedResponse.error
+      }
+
+      setAvailableTimes(availabilityResult.times ?? [])
+
+      setBookedTimes(
+        (bookedResponse.data ?? []).map(
+          (booking: { horario: string }) =>
+            booking.horario.slice(0, 5),
+        ),
+      )
+    } catch (err) {
+      console.error(err)
+
+      setError(
+        'Não foi possível carregar os horários desta data.',
+      )
+    } finally {
+      setLoading(false)
+    }
+  }, [date])
+
   useEffect(() => {
-    async function loadTimes() {
-      setLoading(true)
-      setError('')
+    loadTimes()
 
-      const dateString = date.toLocaleDateString('en-CA')
-
-      try {
-        const [availabilityResponse, bookedResponse] = await Promise.all([
-          fetch(`/api/availability?date=${dateString}`, {
-            cache: 'no-store',
-          }),
-          supabase.rpc('get_booked_times', {
-            p_date: dateString,
-          }),
-        ])
-
-        const availabilityResult = await availabilityResponse.json()
-
-        if (!availabilityResponse.ok) {
-          throw new Error(
-            availabilityResult.error ??
-              'Não foi possível carregar os horários.',
-          )
-        }
-
-        if (bookedResponse.error) {
-          throw bookedResponse.error
-        }
-
-        setAvailableTimes(availabilityResult.times ?? [])
-
-        setBookedTimes(
-          (bookedResponse.data ?? []).map(
-            (booking: { horario: string }) =>
-              booking.horario.slice(0, 5),
-          ),
-        )
-      } catch (err) {
-        console.error(err)
-
-        setError(
-          'Não foi possível carregar os horários desta data.',
-        )
-      } finally {
-        setLoading(false)
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') {
+        loadTimes()
       }
     }
 
-    loadTimes()
-  }, [date])
+    window.addEventListener('pageshow', loadTimes)
+    window.addEventListener('focus', loadTimes)
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+
+    return () => {
+      window.removeEventListener('pageshow', loadTimes)
+      window.removeEventListener('focus', loadTimes)
+      document.removeEventListener('visibilitychange', refreshWhenVisible)
+    }
+  }, [loadTimes])
 
   if (loading) {
     return (

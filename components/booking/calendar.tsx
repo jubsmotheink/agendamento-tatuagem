@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -32,41 +32,57 @@ export function Calendar({ selected, onSelect }: CalendarProps) {
   const days = getCalendarDays(viewMonth)
   const canGoBack = !isSameMonth(viewMonth, today)
 
-  useEffect(() => {
-    async function loadMonthAvailability() {
-      setLoadingAvailability(true)
+  const loadMonthAvailability = useCallback(async () => {
+    setLoadingAvailability(true)
 
-      const year = viewMonth.getFullYear()
-      const month = viewMonth.getMonth() + 1
+    const year = viewMonth.getFullYear()
+    const month = viewMonth.getMonth() + 1
 
-      try {
-        const response = await fetch(
-          `/api/availability/month?year=${year}&month=${month}`,
-          {
-            cache: 'no-store',
-          },
+    try {
+      const response = await fetch(
+        `/api/availability/month?year=${year}&month=${month}`,
+        {
+          cache: 'no-store',
+        },
+      )
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(
+          result.error ?? 'Não foi possível carregar o calendário.',
         )
+      }
 
-        const result = await response.json()
+      setAvailableDates(result.availableDates ?? [])
+    } catch (error) {
+      console.error('Erro ao carregar disponibilidade mensal:', error)
 
-        if (!response.ok) {
-          throw new Error(
-            result.error ?? 'Não foi possível carregar o calendário.',
-          )
-        }
+      setAvailableDates([])
+    } finally {
+      setLoadingAvailability(false)
+    }
+  }, [viewMonth])
 
-        setAvailableDates(result.availableDates ?? [])
-      } catch (error) {
-        console.error('Erro ao carregar disponibilidade mensal:', error)
+  useEffect(() => {
+    loadMonthAvailability()
 
-        setAvailableDates([])
-      } finally {
-        setLoadingAvailability(false)
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') {
+        loadMonthAvailability()
       }
     }
 
-    loadMonthAvailability()
-  }, [viewMonth])
+    window.addEventListener('pageshow', loadMonthAvailability)
+    window.addEventListener('focus', loadMonthAvailability)
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+
+    return () => {
+      window.removeEventListener('pageshow', loadMonthAvailability)
+      window.removeEventListener('focus', loadMonthAvailability)
+      document.removeEventListener('visibilitychange', refreshWhenVisible)
+    }
+  }, [loadMonthAvailability])
 
   function dateKey(date: Date) {
     return date.toLocaleDateString('en-CA')
