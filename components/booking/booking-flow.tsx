@@ -2,10 +2,16 @@
 
 import { useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
-import { STUDIO_HANDLE, STUDIO_NAME, STUDIO_TIME_SLOTS } from '@/lib/booking/config'
+import {
+  STUDIO_HANDLE,
+  STUDIO_NAME,
+  STUDIO_TIME_SLOTS,
+  type StudioLocationId,
+} from '@/lib/booking/config'
 import { formatLongDate } from '@/lib/booking/dates'
 import { initialBookingState, type BookingState, type BookingStep } from '@/lib/booking/types'
 import { Calendar } from './calendar'
+import { LocationSelector } from './location-selector'
 import { TimeSlots } from './time-slots'
 import { ContactForm } from './contact-form'
 import { Review } from './review'
@@ -15,8 +21,18 @@ import { Confirmation } from './confirmation'
 import { StepIndicator } from './step-indicator'
 
 export function BookingFlow() {
-  const [step, setStep] = useState<BookingStep>('schedule')
+  const [step, setStep] = useState<BookingStep>('location')
   const [booking, setBooking] = useState<BookingState>(initialBookingState)
+
+  function selectLocation(locationId: StudioLocationId) {
+    setBooking((prev) => ({
+      ...prev,
+      locationId,
+      date: null,
+      time: null,
+    }))
+    setStep('schedule')
+  }
 
   function selectDate(date: Date) {
     // Ao trocar de data, limpamos o horário para forçar nova escolha.
@@ -43,6 +59,7 @@ export function BookingFlow() {
         email: booking.email,
         date: booking.date?.toISOString(),
         time: booking.time,
+        locationId: booking.locationId,
       }),
     })
 
@@ -67,7 +84,7 @@ export function BookingFlow() {
 
   function restart() {
     setBooking(initialBookingState)
-    setStep('schedule')
+    setStep('location')
   }
 
   async function expireReservation() {
@@ -100,8 +117,25 @@ export function BookingFlow() {
         key={step}
         className="animate-in fade-in slide-in-from-bottom-2 duration-500"
       >
+        {step === 'location' && (
+          <div>
+            <StepHeading
+              title="Onde você prefere ser atendido?"
+              subtitle="Escolha o local para continuar com o agendamento."
+            />
+            <LocationSelector
+              selected={booking.locationId}
+              onSelect={selectLocation}
+            />
+          </div>
+        )}
+
         {step === 'schedule' && (
           <div>
+            <BackButton
+              label="Trocar local"
+              onClick={() => setStep('location')}
+            />
             <StepHeading
               title="Escolha seu horário"
               subtitle="Selecione uma data para conferir os horários disponíveis."

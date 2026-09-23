@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { formatLongDate } from '@/lib/booking/dates'
+import { getStudioLocation } from '@/lib/booking/config'
 import type { BookingState } from '@/lib/booking/types'
 
 type ReviewProps = {
@@ -13,7 +14,9 @@ type ReviewProps = {
 export function Review({ booking, timeLabel, onConfirm }: ReviewProps) {
   const [confirming, setConfirming] = useState(false)
 const [showPolicy, setShowPolicy] = useState(false)
+  const location = getStudioLocation(booking.locationId)
   const rows = [
+    { label: 'Local', value: location?.name ?? '—' },
     { label: 'Data', value: booking.date ? formatLongDate(booking.date) : '—' },
     { label: 'Horário', value: timeLabel },
     { label: 'Nome', value: booking.name },

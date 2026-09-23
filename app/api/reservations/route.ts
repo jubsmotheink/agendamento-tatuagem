@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createPixOrder } from '@/lib/mercado-pago'
 import { createSupabaseAdmin } from '@/lib/supabase-admin'
+import { getStudioLocation } from '@/lib/booking/config'
 
 export async function POST(request: Request) {
   let reservationId: number | null = null
@@ -13,13 +14,16 @@ export async function POST(request: Request) {
     const email = String(body.email ?? '').trim().toLowerCase()
     const date = String(body.date ?? '').slice(0, 10)
     const time = String(body.time ?? '').slice(0, 5)
+    const locationId = String(body.locationId ?? '').trim()
+    const location = getStudioLocation(locationId)
 
     if (
       !name ||
       !whatsapp ||
       !email.includes('@') ||
       !date ||
-      !time
+      !time ||
+      !location
     ) {
       return NextResponse.json(
         { error: 'Dados da reserva incompletos.' },
@@ -92,6 +96,7 @@ export async function POST(request: Request) {
           status: 'pendente',
           pagamento_status: 'aguardando',
           expires_at: expiresAt,
+          unidade: location.id,
         })
         .select('id')
         .single()

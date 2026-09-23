@@ -1,5 +1,8 @@
+import type { StudioLocationId } from './config'
+
 /** Etapas do fluxo de agendamento. */
 export type BookingStep =
+  | 'location'
   | 'schedule'
   | 'contact'
   | 'review'
@@ -9,6 +12,7 @@ export type BookingStep =
 
 /** Estado acumulado ao longo do fluxo. */
 export type BookingState = {
+  locationId: StudioLocationId | null
   date: Date | null
   /** Horário no formato 24h, ex.: "14:00". */
   time: string | null
@@ -24,6 +28,7 @@ export type BookingState = {
 }
 
 export const initialBookingState: BookingState = {
+  locationId: null,
   date: null,
   time: null,
   name: '',

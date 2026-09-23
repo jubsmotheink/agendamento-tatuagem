@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { AvailabilityManager } from '@/components/admin/availability-manager'
+import { getStudioLocation } from '@/lib/booking/config'
 type AdminSection = 'agenda' | 'reservas'
 
 type Reservation = {
@@ -26,6 +27,7 @@ type Reservation = {
   horario: string
   status: string
   pagamento_status: string
+  unidade: string
 }
 
 export default function AdminPage() {
@@ -385,6 +387,14 @@ async function rescheduleReservation(reservation: Reservation) {
                     </div>
 
                     <dl className="mt-5 grid gap-4 border-t border-border pt-5 sm:grid-cols-2">
+                      <ReservationInfo
+                        label="Local"
+                        value={
+                          getStudioLocation(reservation.unidade)?.name ??
+                          'Barra de Guaratiba'
+                        }
+                      />
+
                       <ReservationInfo
                         label="WhatsApp"
                         value={reservation.telefone}

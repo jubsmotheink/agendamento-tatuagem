@@ -1,7 +1,11 @@
 'use client'
 
 import { Check } from 'lucide-react'
-import { buildWhatsappLink, STUDIO_TIME_SLOTS } from '@/lib/booking/config'
+import {
+  buildWhatsappLink,
+  getStudioLocation,
+  STUDIO_TIME_SLOTS,
+} from '@/lib/booking/config'
 import { formatLongDate } from '@/lib/booking/dates'
 import type { BookingState } from '@/lib/booking/types'
 
@@ -14,13 +18,12 @@ export function Confirmation({ booking, onRestart }: ConfirmationProps) {
   const timeLabel =
     STUDIO_TIME_SLOTS.find((s) => s.value === booking.time)?.label ?? booking.time
   const dateLabel = booking.date ? formatLongDate(booking.date) : ''
-  const whatsappLink = buildWhatsappLink(dateLabel, timeLabel ?? '')
-  const studioAddress =
-  'Estrada Roberto Burle Marx, 8624, Barra de Guaratiba, Rio de Janeiro - RJ'
-
-const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-  studioAddress,
-)}`
+  const location = getStudioLocation(booking.locationId)
+  const whatsappLink = buildWhatsappLink(
+    dateLabel,
+    timeLabel ?? '',
+    location?.name ?? 'selecionada',
+  )
 
   return (
     <div className="flex flex-col items-center text-center">
@@ -36,6 +39,14 @@ const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURICom
         breve entraremos em contato pelo WhatsApp para os últimos detalhes.
       </p>
       <dl className="mt-8 w-full divide-y divide-border rounded-lg border border-border bg-card text-left">
+        <div className="flex items-center justify-between px-5 py-4">
+          <dt className="text-xs uppercase tracking-widest text-muted-foreground">
+            Local
+          </dt>
+          <dd className="max-w-[65%] text-right text-sm text-foreground">
+            {location?.name ?? '—'}
+          </dd>
+        </div>
         <div className="flex items-center justify-between px-5 py-4">
           <dt className="text-xs uppercase tracking-widest text-muted-foreground">
             E-mail
@@ -77,19 +88,23 @@ const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURICom
   </p>
 
   <p className="mt-3 text-sm leading-relaxed text-foreground">
-    Estrada Roberto Burle Marx, 8624
-    <br />
-    Barra de Guaratiba — Rio de Janeiro/RJ
+    {location?.address ?? 'Endereço indisponível'}
   </p>
 
-  <a
-    href={mapsLink}
-    target="_blank"
-    rel="noopener noreferrer"
-    className="mt-5 flex w-full items-center justify-center rounded-lg border border-border px-5 py-3 text-xs font-medium uppercase tracking-widest text-foreground transition-colors hover:bg-secondary"
-  >
-    Como chegar
-  </a>
+  {location?.hint && (
+    <p className="mt-2 text-xs text-muted-foreground">{location.hint}</p>
+  )}
+
+  {location && (
+    <a
+      href={location.mapsUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="mt-5 flex w-full items-center justify-center rounded-lg border border-border px-5 py-3 text-xs font-medium uppercase tracking-widest text-foreground transition-colors hover:bg-secondary"
+    >
+      Como chegar
+    </a>
+  )}
 </div>
 
       <a

@@ -2,6 +2,7 @@ import { cn } from '@/lib/utils'
 import type { BookingStep } from '@/lib/booking/types'
 
 const STEPS: { key: BookingStep; label: string }[] = [
+  { key: 'location', label: 'Local' },
   { key: 'schedule', label: 'Horário' },
   { key: 'contact', label: 'Dados' },
   { key: 'review', label: 'Revisão' },
