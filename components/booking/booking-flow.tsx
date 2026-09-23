@@ -21,17 +21,15 @@ import { Confirmation } from './confirmation'
 import { StepIndicator } from './step-indicator'
 
 export function BookingFlow() {
-  const [step, setStep] = useState<BookingStep>('location')
+  const [step, setStep] = useState<BookingStep>('schedule')
   const [booking, setBooking] = useState<BookingState>(initialBookingState)
 
   function selectLocation(locationId: StudioLocationId) {
     setBooking((prev) => ({
       ...prev,
       locationId,
-      date: null,
       time: null,
     }))
-    setStep('schedule')
   }
 
   function selectDate(date: Date) {
@@ -84,7 +82,7 @@ export function BookingFlow() {
 
   function restart() {
     setBooking(initialBookingState)
-    setStep('location')
+    setStep('schedule')
   }
 
   async function expireReservation() {
@@ -117,28 +115,15 @@ export function BookingFlow() {
         key={step}
         className="animate-in fade-in slide-in-from-bottom-2 duration-500"
       >
-        {step === 'location' && (
+        {step === 'schedule' && (
           <div>
             <StepHeading
-              title="Onde você prefere ser atendido?"
-              subtitle="Escolha o local para continuar com o agendamento."
+              title="Escolha seu horário"
+              subtitle="Selecione uma data para conferir os horários disponíveis."
             />
             <LocationSelector
               selected={booking.locationId}
               onSelect={selectLocation}
-            />
-          </div>
-        )}
-
-        {step === 'schedule' && (
-          <div>
-            <BackButton
-              label="Trocar local"
-              onClick={() => setStep('location')}
-            />
-            <StepHeading
-              title="Escolha seu horário"
-              subtitle="Selecione uma data para conferir os horários disponíveis."
             />
             <Calendar selected={booking.date} onSelect={selectDate} />
 
@@ -147,11 +132,17 @@ export function BookingFlow() {
                 <p className="mb-4 text-sm text-muted-foreground text-pretty">
                   {formatLongDate(booking.date)}
                 </p>
-                <TimeSlots
-                  date={booking.date}
-                  selected={booking.time}
-                  onSelect={selectTime}
-                />
+                {booking.locationId ? (
+                  <TimeSlots
+                    date={booking.date}
+                    selected={booking.time}
+                    onSelect={selectTime}
+                  />
+                ) : (
+                  <p className="rounded-lg border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
+                    Escolha sua unidade acima para selecionar um horário.
+                  </p>
+                )}
               </div>
             )}
           </div>

@@ -29,7 +29,7 @@ export const STUDIO_LOCATIONS = [
   },
   {
     id: 'copacabana-barata-ribeiro',
-    name: 'Copacabana — Barata Ribeiro',
+    name: 'Barata Ribeiro',
     address:
       'R. Barata Ribeiro, 759, Copacabana, Rio de Janeiro - RJ, 22051-001',
     hint: 'Próximo ao metrô Cantagalo',
@@ -38,7 +38,7 @@ export const STUDIO_LOCATIONS = [
   },
   {
     id: 'copacabana-djalma-ulrich',
-    name: 'Copacabana — Djalma Ulrich',
+    name: 'Djalma Ulrich',
     address:
       'R. Djalma Ulrich, 163, loja E, Copacabana, Rio de Janeiro - RJ, 22071-020',
     hint: 'Próximo ao Posto 5',

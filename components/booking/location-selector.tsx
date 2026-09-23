@@ -1,6 +1,3 @@
-'use client'
-
-import { MapPin } from 'lucide-react'
 import {
   STUDIO_LOCATIONS,
   type StudioLocationId,
@@ -16,51 +13,32 @@ export function LocationSelector({
   onSelect,
 }: LocationSelectorProps) {
   return (
-    <div className="flex flex-col gap-3">
-      {STUDIO_LOCATIONS.map((location) => {
-        const isSelected = selected === location.id
-
-        return (
-          <button
-            key={location.id}
-            type="button"
-            onClick={() => onSelect(location.id)}
-            aria-pressed={isSelected}
-            className={`rounded-xl border px-5 py-4 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
-              isSelected
-                ? 'border-accent bg-accent text-accent-foreground shadow-sm'
-                : 'border-border bg-card text-foreground hover:border-accent/50'
-            }`}
-          >
-            <span className="flex items-start gap-3">
-              <MapPin className="mt-0.5 size-5 shrink-0" strokeWidth={1.5} />
-              <span>
-                <span className="block font-serif text-lg">
-                  {location.name}
-                </span>
-                <span
-                  className={`mt-1 block text-sm leading-relaxed ${
-                    isSelected
-                      ? 'text-accent-foreground/75'
-                      : 'text-muted-foreground'
-                  }`}
-                >
-                  {location.address}
-                </span>
-                <span
-                  className={`mt-2 block text-xs uppercase tracking-widest ${
-                    isSelected
-                      ? 'text-accent-foreground/65'
-                      : 'text-primary/70'
-                  }`}
-                >
-                  {location.hint}
-                </span>
-              </span>
-            </span>
-          </button>
-        )
-      })}
+    <div className="mb-7">
+      <label
+        htmlFor="studio-location"
+        className="mb-3 block text-xs uppercase tracking-widest text-muted-foreground"
+      >
+        Escolha sua unidade
+      </label>
+      <select
+        id="studio-location"
+        value={selected ?? ''}
+        onChange={(event) =>
+          onSelect(event.target.value as StudioLocationId)
+        }
+        className="w-full rounded-lg border border-border bg-card px-4 py-3 text-sm text-foreground outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-ring"
+      >
+        <option value="" disabled>
+          Selecione uma unidade
+        </option>
+        {STUDIO_LOCATIONS.map((location) => {
+          return (
+            <option key={location.id} value={location.id}>
+              {location.name}
+            </option>
+          )
+        })}
+      </select>
     </div>
   )
 }

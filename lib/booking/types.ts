@@ -2,7 +2,6 @@ import type { StudioLocationId } from './config'
 
 /** Etapas do fluxo de agendamento. */
 export type BookingStep =
-  | 'location'
   | 'schedule'
   | 'contact'
   | 'review'

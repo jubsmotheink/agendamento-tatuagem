@@ -1,0 +1,6 @@
+node_modules/
+.next/
+.pnpm-store/
+.corepack-cache/
+next-env.d.ts
+*.tsbuildinfo
