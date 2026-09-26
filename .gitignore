@@ -2,5 +2,7 @@ node_modules/
 .next/
 .pnpm-store/
 .corepack-cache/
+.npm-cache/
+supabase/.temp/
 next-env.d.ts
 *.tsbuildinfo

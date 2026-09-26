@@ -69,7 +69,7 @@ export async function PATCH(
 
   const { data: reservation, error: reservationError } = await supabase
     .from('agendamentos')
-    .select('id, status, pagamento_status, data, horario')
+    .select('id, status, pagamento_status, data, horario, atendimento_status, atendido_em')
     .eq('id', reservationId)
     .single()
 
@@ -181,8 +181,75 @@ if (action === 'archive') {
     return NextResponse.json({ ok: true })
   }
 
+  if (action === 'manage') {
+    const attendanceStatus = String(body.attendanceStatus ?? '').trim()
+    const totalAmount = parseOptionalAmount(body.totalAmount)
+    const receivedAmount = parseRequiredAmount(body.receivedAmount)
+    const paymentMethod = String(body.paymentMethod ?? '').trim()
+    const notes = String(body.notes ?? '').trim()
+
+    if (!['agendado', 'atendido', 'nao_compareceu'].includes(attendanceStatus)) {
+      return NextResponse.json(
+        { error: 'Situação do atendimento inválida.' },
+        { status: 400 },
+      )
+    }
+
+    if (totalAmount === undefined || receivedAmount === undefined) {
+      return NextResponse.json(
+        { error: 'Informe valores financeiros válidos.' },
+        { status: 400 },
+      )
+    }
+
+    const { error } = await supabase
+      .from('agendamentos')
+      .update({
+        atendimento_status: attendanceStatus,
+        valor_total: totalAmount,
+        valor_recebido: receivedAmount,
+        forma_pagamento: paymentMethod || null,
+        observacoes: notes || null,
+        atendido_em:
+          attendanceStatus === 'atendido'
+            ? reservation.atendido_em ?? new Date().toISOString()
+            : null,
+      })
+      .eq('id', reservationId)
+
+    if (error) {
+      console.error('Erro ao atualizar gestão da reserva:', error)
+
+      return NextResponse.json(
+        { error: 'Não foi possível salvar os dados do atendimento.' },
+        { status: 500 },
+      )
+    }
+
+    return NextResponse.json({ ok: true })
+  }
+
   return NextResponse.json(
     { error: 'Ação inválida.' },
     { status: 400 },
   )
+}
+
+function parseOptionalAmount(value: unknown) {
+  const normalized = String(value ?? '').trim().replace(',', '.')
+
+  if (!normalized) return null
+
+  const amount = Number(normalized)
+  return Number.isFinite(amount) && amount >= 0 ? amount : undefined
+}
+
+function parseRequiredAmount(value: unknown) {
+  const normalized = String(value ?? '').trim().replace(',', '.')
+
+  if (!normalized) return undefined
+
+  const amount = Number(normalized)
+
+  return Number.isFinite(amount) && amount >= 0 ? amount : undefined
 }

@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { getPixOrder, isPaidOrder } from '@/lib/mercado-pago'
 import { createSupabaseAdmin } from '@/lib/supabase-admin'
+import { DEPOSIT_AMOUNT } from '@/lib/booking/config'
 
 function isValidSignature(request: Request, dataId: string) {
   const secret = process.env.MERCADO_PAGO_WEBHOOK_SECRET?.trim()
@@ -72,7 +73,11 @@ export async function POST(request: Request) {
     if (isPaidOrder(order)) {
       await supabase
         .from('agendamentos')
-        .update({ status: 'confirmado', pagamento_status: 'aprovado' })
+        .update({
+          status: 'confirmado',
+          pagamento_status: 'aprovado',
+          valor_recebido: DEPOSIT_AMOUNT,
+        })
         .eq('id', reservationId)
         .eq('mercado_pago_order_id', dataId)
     }

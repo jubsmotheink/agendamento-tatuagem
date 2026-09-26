@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getPixOrder, isPaidOrder } from '@/lib/mercado-pago'
 import { createSupabaseAdmin } from '@/lib/supabase-admin'
+import { DEPOSIT_AMOUNT } from '@/lib/booking/config'
 
 export async function GET(
   _request: Request,
@@ -22,7 +23,11 @@ export async function GET(
   if (isPaidOrder(order)) {
     await supabase
       .from('agendamentos')
-      .update({ status: 'confirmado', pagamento_status: 'aprovado' })
+      .update({
+        status: 'confirmado',
+        pagamento_status: 'aprovado',
+        valor_recebido: DEPOSIT_AMOUNT,
+      })
       .eq('id', id)
     return NextResponse.json({ status: 'confirmado' })
   }

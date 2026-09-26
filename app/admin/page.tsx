@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import type { ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Archive,
@@ -10,6 +11,7 @@ import {
   RefreshCw,
   Users,
   CalendarClock,
+  ClipboardPenLine,
   X,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -28,6 +30,13 @@ type Reservation = {
   status: string
   pagamento_status: string
   unidade: string
+  atendimento_status: 'agendado' | 'atendido' | 'nao_compareceu'
+  valor_sinal: number
+  valor_total: number | null
+  valor_recebido: number
+  forma_pagamento: string | null
+  observacoes: string | null
+  atendido_em: string | null
 }
 
 export default function AdminPage() {
@@ -44,6 +53,13 @@ export default function AdminPage() {
 const [newDate, setNewDate] = useState('')
 const [newTime, setNewTime] = useState('10:00')
 const [actionLoading, setActionLoading] = useState<number | null>(null)
+  const [managingId, setManagingId] = useState<number | null>(null)
+  const [attendanceStatus, setAttendanceStatus] =
+    useState<Reservation['atendimento_status']>('agendado')
+  const [totalAmount, setTotalAmount] = useState('')
+  const [receivedAmount, setReceivedAmount] = useState('0')
+  const [paymentMethod, setPaymentMethod] = useState('')
+  const [notes, setNotes] = useState('')
 
   useEffect(() => {
     async function checkSession() {
@@ -112,7 +128,7 @@ const [actionLoading, setActionLoading] = useState<number | null>(null)
   }
 async function updateReservation(
   id: number,
-  body: Record<string, string>,
+  body: Record<string, unknown>,
 ) {
   setActionLoading(id)
   setReservationsError('')
@@ -156,6 +172,32 @@ async function updateReservation(
     setActionLoading(null)
   }
 }
+
+function openManagement(reservation: Reservation) {
+  setEditingId(null)
+  setManagingId(reservation.id)
+  setAttendanceStatus(reservation.atendimento_status)
+  setTotalAmount(
+    reservation.valor_total === null ? '' : String(reservation.valor_total),
+  )
+  setReceivedAmount(String(reservation.valor_recebido ?? 0))
+  setPaymentMethod(reservation.forma_pagamento ?? '')
+  setNotes(reservation.observacoes ?? '')
+}
+
+async function saveManagement(reservation: Reservation) {
+  const success = await updateReservation(reservation.id, {
+    action: 'manage',
+    attendanceStatus,
+    totalAmount,
+    receivedAmount,
+    paymentMethod,
+    notes,
+  })
+
+  if (success) setManagingId(null)
+}
+
   async function restoreReservation(reservation: Reservation) {
   const confirmed = window.confirm(
     `Restaurar a reserva de ${reservation.nome}?`,
@@ -411,6 +453,30 @@ async function rescheduleReservation(reservation: Reservation) {
                       />
 
                       <ReservationInfo
+                        label="Atendimento"
+                        value={formatStatus(reservation.atendimento_status)}
+                      />
+
+                      <ReservationInfo
+                        label="Recebido"
+                        value={formatCurrency(reservation.valor_recebido)}
+                      />
+
+                      <ReservationInfo
+                        label="Valor total"
+                        value={
+                          reservation.valor_total === null
+                            ? 'Não informado'
+                            : formatCurrency(reservation.valor_total)
+                        }
+                      />
+
+                      <ReservationInfo
+                        label="Saldo"
+                        value={formatBalance(reservation)}
+                      />
+
+                      <ReservationInfo
                         label="Reserva"
                         value={`#${reservation.id}`}
                       />
@@ -436,6 +502,7 @@ async function rescheduleReservation(reservation: Reservation) {
       <button
         type="button"
         onClick={() => {
+          setManagingId(null)
           setEditingId(reservation.id)
           setNewDate(reservation.data.slice(0, 10))
           setNewTime(formatTime(reservation.horario))
@@ -457,6 +524,15 @@ async function rescheduleReservation(reservation: Reservation) {
       </button>
     </>
   )}
+
+  <button
+    type="button"
+    onClick={() => openManagement(reservation)}
+    className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
+  >
+    <ClipboardPenLine className="size-4" strokeWidth={1.5} />
+    Gerenciar
+  </button>
 
   <button
     type="button"
@@ -539,6 +615,103 @@ async function rescheduleReservation(reservation: Reservation) {
         </div>
       </div>
     )}
+
+    {managingId === reservation.id && (
+      <div className="mt-4 flex flex-col gap-4 rounded-lg bg-secondary/40 p-4">
+        <div>
+          <p className="mb-2 text-xs uppercase tracking-widest text-muted-foreground">
+            Situação do atendimento
+          </p>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {[
+              ['agendado', 'Agendado'],
+              ['atendido', 'Atendido'],
+              ['nao_compareceu', 'Não compareceu'],
+            ].map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() =>
+                  setAttendanceStatus(
+                    value as Reservation['atendimento_status'],
+                  )
+                }
+                className={`rounded-lg border px-3 py-2.5 text-sm transition-colors ${
+                  attendanceStatus === value
+                    ? 'border-primary bg-primary text-primary-foreground'
+                    : 'border-border bg-background text-foreground'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <ManagementField label="Valor total">
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={totalAmount}
+              onChange={(event) => setTotalAmount(event.target.value)}
+              placeholder="0,00"
+              className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground"
+            />
+          </ManagementField>
+
+          <ManagementField label="Valor recebido">
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={receivedAmount}
+              onChange={(event) => setReceivedAmount(event.target.value)}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground"
+            />
+          </ManagementField>
+        </div>
+
+        <ManagementField label="Forma de pagamento">
+          <input
+            type="text"
+            value={paymentMethod}
+            onChange={(event) => setPaymentMethod(event.target.value)}
+            placeholder="Pix, dinheiro, cartão..."
+            className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground"
+          />
+        </ManagementField>
+
+        <ManagementField label="Observações internas">
+          <textarea
+            value={notes}
+            onChange={(event) => setNotes(event.target.value)}
+            rows={4}
+            placeholder="Anotações sobre o atendimento"
+            className="w-full resize-y rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground"
+          />
+        </ManagementField>
+
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => saveManagement(reservation)}
+            disabled={actionLoading === reservation.id}
+            className="flex-1 rounded-lg bg-primary px-4 py-3 text-xs uppercase tracking-widest text-primary-foreground disabled:opacity-50"
+          >
+            {actionLoading === reservation.id ? 'Salvando...' : 'Salvar gestão'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setManagingId(null)}
+            className="rounded-lg border border-border px-4 py-3 text-xs uppercase tracking-widest text-muted-foreground"
+          >
+            Fechar
+          </button>
+        </div>
+      </div>
+    )}
   </div>
 )}
                   </article>
@@ -572,6 +745,23 @@ function ReservationInfo({
   )
 }
 
+function ManagementField({
+  label,
+  children,
+}: {
+  label: string
+  children: ReactNode
+}) {
+  return (
+    <label>
+      <span className="mb-1.5 block text-xs uppercase tracking-widest text-muted-foreground">
+        {label}
+      </span>
+      {children}
+    </label>
+  )
+}
+
 function StatusBadge({ status }: { status: string }) {
   const normalized = status?.toLowerCase()
 
@@ -596,6 +786,8 @@ function StatusBadge({ status }: { status: string }) {
 function formatStatus(status: string) {
   if (!status) return '—'
 
+  if (status === 'nao_compareceu') return 'Não compareceu'
+
   return status.charAt(0).toUpperCase() + status.slice(1).replaceAll('_', ' ')
 }
 
@@ -614,4 +806,19 @@ function formatDate(value: string) {
   if (!year || !month || !day) return '—'
 
   return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`
+}
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(value ?? 0)
+}
+
+function formatBalance(reservation: Reservation) {
+  if (reservation.valor_total === null) return 'Não informado'
+
+  return formatCurrency(
+    Math.max(reservation.valor_total - reservation.valor_recebido, 0),
+  )
 }

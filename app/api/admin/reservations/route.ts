@@ -56,7 +56,7 @@ const archived = searchParams.get('archived') === 'true'
   const { data, error } = await supabase
     .from('agendamentos')
   .select(
-  'id, created_at, nome, telefone, email, data, horario, status, pagamento_status, arquivado, unidade',
+  'id, created_at, nome, telefone, email, data, horario, status, pagamento_status, arquivado, unidade, atendimento_status, valor_sinal, valor_total, valor_recebido, forma_pagamento, observacoes, atendido_em',
 )
 .eq('arquivado', archived)
 .order('data', { ascending: true })
